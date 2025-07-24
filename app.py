@@ -1,4 +1,3 @@
-
 from flask import Flask, render_template, request, redirect, url_for
 from datetime import datetime
 from pytz import timezone
@@ -9,14 +8,11 @@ import os
 app = Flask(__name__)
 tz = timezone("America/Santiago")
 
-# Configurar conexión PostgreSQL
+# URL de la base de datos PostgreSQL
 DATABASE_URL = "postgresql://estacionamiento2_db_user:0AoObGxcyxxb1gJkQGcNkXTG81J4kGVi@dpg-d20081fdiees73c3gv2g-a/estacionamiento2_db"
 engine = create_engine(DATABASE_URL)
 
-def get_time_now():
-    return datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
-
-@app.before_first_request
+# Crear la tabla si no existe
 def init_db():
     with engine.connect() as conn:
         conn.execute(text("""
@@ -29,6 +25,12 @@ def init_db():
                 medio_pago TEXT
             )
         """))
+
+# Ejecutar una vez al iniciar
+init_db()
+
+def get_time_now():
+    return datetime.now(tz).strftime("%Y-%m-%d %H:%M:%S")
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -76,7 +78,7 @@ def index():
                         "monto": monto
                     }
             else:
-                # Es un ingreso
+                # Es una entrada
                 conn.execute(text("INSERT INTO registros (patente, hora_entrada) VALUES (:pat, :entrada)"),
                              {"pat": patente, "entrada": now})
                 return redirect(url_for("index", fecha=filtro_fecha))
